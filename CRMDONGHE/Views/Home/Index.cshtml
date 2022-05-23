@@ -1,0 +1,269 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<section id="tabs" class="project-tab">
+    <div class="form-horizontal">
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="nav nav-tabs nav-fill" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status" type="button" role="tab" aria-controls="status" aria-selected="true">Status</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">History</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="nav-tabContent">
+                    <div class="tab-pane fade show active" id="status" role="tabpanel" aria-labelledby="nav-status-tab">
+                        <table id="dtStatus" class="table table-striped table-bordered nowrap" cellspacing="0" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>KY THUAT</th>
+                                    <th>GIAM SAT</th>
+                                    <th>TEN DO NGHE</th>
+                                    <th>MA DO NGHE</th>
+                                    <th>TON</th>
+                                    <th>TIME UPDATE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="history" class="tab-pane fade" role="tabpanel" aria-labelledby="nav-history-tab">
+                        <table id="dtHis"  class="table table-striped table-bordered nowrap" cellspacing="0" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>THOI GIAN</th>
+                                    <th>KY THUAT</th>
+                                    <th>MA DO NGHE</th>
+                                    <th>MA GIAM SAT</th>
+                                    <th>TRANG THAI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<style type="text/css">
+
+    #tabs {
+        padding: 20px;
+    }
+
+    .project-tab #tabs {
+        background: #007b5e;
+        color: #eee;
+    }
+
+        .project-tab #tabs h6.section-title {
+            color: #eee;
+        }
+
+        .project-tab #tabs .nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+            color: #0062cc;
+            background-color: transparent;
+            border-color: transparent transparent #f3f3f3;
+            border-bottom: 3px solid !important;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+    .project-tab .nav-link {
+        border: 1px solid transparent;
+        border-top-left-radius: .25rem;
+        border-top-right-radius: .25rem;
+        color: #0062cc;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+        .project-tab .nav-link:hover {
+            border: none;
+        }
+
+    .project-tab thead {
+        background: #f3f3f3;
+        color: #333;
+    }
+
+    .project-tab a {
+        text-decoration: none;
+        color: #333;
+        font-weight: 600;
+    }
+</style>
+
+@section scripts{
+    <script type="text/javascript">
+        $(() => {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("getInfo", "Home")',
+                data: {  },
+                beforeSend: function () {
+
+                },
+                success: function (rs) {
+                    var status = jQuery.parseJSON(rs.status);
+                    var history = jQuery.parseJSON(rs.history);
+
+                    var $tbStatus = $('#dtStatus tbody');
+                    var $tbHis = $('#dtHis tbody');
+                    $.each(status, (i, e) => {
+                        var tr = '<tr>';
+                        tr += '<td>'+e.STT+'</td>';
+                        tr += '<td>'+(e.KY_THUAT || '')+'</td>';
+                        tr += '<td>'+(e.GIAM_SAT || '')+'</td>';
+                        tr += '<td>'+(e.TEN_DO_NGHE || '')+'</td>';
+                        tr += '<td>'+(e.MA_DO_NGHE || '')+'</td>';
+                        tr += '<td>'+(e.TON ? e.TON : '') +'</td>';
+                        tr += '<td>'+(e.TIME_UPDATE || '')+'</td>';
+                        tr += '</tr>';
+                        $tbStatus.append(tr);
+                    });
+
+                    $tbStatus.closest('table').find('thead tr')
+                        .clone(true)
+                        .addClass('filters')
+                        .appendTo('#dtStatus thead');
+
+                    $tbStatus.closest('table').dataTable({
+                        'bLengthChange': false,
+                        'searching': true,
+                        'paging': false,
+                        'initComplete': function () {
+                            var api = this.api();
+
+                            // For each column
+                            api
+                                .columns()
+                                .eq(0)
+                                .each(function (colIdx) {
+                                    // Set the header cell to contain the input element
+                                    var cell = $('#dtStatus .filters th').eq(
+                                        $(api.column(colIdx).header()).index()
+                                    );
+                                    var title = $(cell).text();
+                                    $(cell).html('<input type="text" width="100%" placeholder="' + title + '" />');
+
+                                    // On every keypress in this input
+                                    $(
+                                        'input',
+                                        $('#dtStatus .filters th').eq($(api.column(colIdx).header()).index())
+                                    )
+                                        .off('keyup change')
+                                        .on('keyup change', function (e) {
+                                            e.stopPropagation();
+
+                                            // Get the search value
+                                            $(this).attr('title', $(this).val());
+                                            var regexr = '({search})'; //$(this).parents('th').find('select').val();
+
+                                            var cursorPosition = this.selectionStart;
+                                            // Search the column for that value
+                                            api
+                                                .column(colIdx)
+                                                .search(
+                                                    this.value != ''
+                                                        ? regexr.replace('{search}', '(((' + this.value + ')))')
+                                                        : '',
+                                                    this.value != '',
+                                                    this.value == ''
+                                                )
+                                                .draw();
+
+                                            $(this)
+                                                .focus()[0]
+                                                .setSelectionRange(cursorPosition, cursorPosition);
+                                        });
+                                });
+                        }
+                    });
+
+                    
+
+                    $.each(history, (i, e) => {
+                        var tr = '<tr>';
+                        tr += '<td>'+e.STT+'</td>';
+                        tr += '<td>'+(e.THOI_GIAN || '')+'</td>';
+                        tr += '<td>'+(e.KY_THUAT || '')+'</td>';
+                        tr += '<td>'+(e.MA_DO_NGHE || '')+'</td>';
+                        tr += '<td>'+(e.MA_GIAM_SAT || '')+'</td>';
+                        tr += '<td>'+(e.TRANG_THAI || '')+'</td>';
+                        tr += '</tr>';
+                        $tbHis.append(tr);
+                    });
+                    $tbHis.closest('table').find('thead tr')
+                        .clone(true)
+                        .addClass('filters')
+                        .appendTo('#dtHis thead');
+
+                    $tbHis.closest('table').dataTable({
+                        'bLengthChange': false,
+                        'searching': true,
+                        'paging': false,
+                        'initComplete': function () {
+                            var api = this.api();
+
+                            // For each column
+                            api
+                                .columns()
+                                .eq(0)
+                                .each(function (colIdx) {
+                                    // Set the header cell to contain the input element
+                                    var cell = $('#dtHis .filters th').eq(
+                                        $(api.column(colIdx).header()).index()
+                                    );
+                                    var title = $(cell).text();
+                                    $(cell).html('<input type="text" width="100%" placeholder="' + title + '" />');
+
+                                    // On every keypress in this input
+                                    $(
+                                        'input',
+                                        $('#dtHis .filters th').eq($(api.column(colIdx).header()).index())
+                                    )
+                                        .off('keyup change')
+                                        .on('keyup change', function (e) {
+                                            e.stopPropagation();
+
+                                            // Get the search value
+                                            $(this).attr('title', $(this).val());
+                                            var regexr = '({search})'; //$(this).parents('th').find('select').val();
+
+                                            var cursorPosition = this.selectionStart;
+                                            // Search the column for that value
+                                            api
+                                                .column(colIdx)
+                                                .search(
+                                                    this.value != ''
+                                                        ? regexr.replace('{search}', '(((' + this.value + ')))')
+                                                        : '',
+                                                    this.value != '',
+                                                    this.value == ''
+                                                )
+                                                .draw();
+
+                                            $(this)
+                                                .focus()[0]
+                                                .setSelectionRange(cursorPosition, cursorPosition);
+                                        });
+                                });
+                        }
+                    });
+                },
+                error: function (res) {
+                    alert(res.responseText);
+                }
+            });
+
+        });
+    </script>
+}
