@@ -2,7 +2,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <section id="tabs" class="project-tab">
-    <div class="container">
+    <div class="form-horizontal">
         <div class="row">
             <div class="col-md-12">
                 <ul class="nav nav-tabs nav-fill" id="myTab" role="tablist">
@@ -32,7 +32,7 @@
                         </table>
                     </div>
                     <div id="history" class="tab-pane fade" role="tabpanel" aria-labelledby="nav-history-tab">
-                        <table id="dtHis" class="table" cellspacing="0">
+                        <table id="dtHis"  class="table table-striped table-bordered nowrap" cellspacing="0" style="width:100%">
                             <thead>
                                 <tr>
                                     <th>STT</th>
@@ -54,6 +54,9 @@
 </section>
 <style type="text/css">
 
+    #tabs {
+        padding: 20px;
+    }
 
     .project-tab #tabs {
         background: #007b5e;
@@ -117,36 +120,143 @@
                     $.each(status, (i, e) => {
                         var tr = '<tr>';
                         tr += '<td>'+e.STT+'</td>';
-                        tr += '<td>'+e.KY_THUAT+'</td>';
-                        tr += '<td>'+e.GIAM_SAT+'</td>';
-                        tr += '<td>'+e.TEN_DO_NGHE+'</td>';
-                        tr += '<td>'+e.MA_DO_NGHE+'</td>';
-                        tr += '<td>'+e.TON+'</td>';
-                        tr += '<td>'+e.TIME_UPDATE+'</td>';
+                        tr += '<td>'+(e.KY_THUAT || '')+'</td>';
+                        tr += '<td>'+(e.GIAM_SAT || '')+'</td>';
+                        tr += '<td>'+(e.TEN_DO_NGHE || '')+'</td>';
+                        tr += '<td>'+(e.MA_DO_NGHE || '')+'</td>';
+                        tr += '<td>'+(e.TON ? e.TON : '') +'</td>';
+                        tr += '<td>'+(e.TIME_UPDATE || '')+'</td>';
                         tr += '</tr>';
                         $tbStatus.append(tr);
                     });
+
+                    $tbStatus.closest('table').find('thead tr')
+                        .clone(true)
+                        .addClass('filters')
+                        .appendTo('#dtStatus thead');
+
                     $tbStatus.closest('table').dataTable({
                         'bLengthChange': false,
                         'searching': true,
-                        'paging': false
+                        'paging': false,
+                        'initComplete': function () {
+                            var api = this.api();
+
+                            // For each column
+                            api
+                                .columns()
+                                .eq(0)
+                                .each(function (colIdx) {
+                                    // Set the header cell to contain the input element
+                                    var cell = $('#dtStatus .filters th').eq(
+                                        $(api.column(colIdx).header()).index()
+                                    );
+                                    var title = $(cell).text();
+                                    $(cell).html('<input type="text" width="100%" placeholder="' + title + '" />');
+
+                                    // On every keypress in this input
+                                    $(
+                                        'input',
+                                        $('#dtStatus .filters th').eq($(api.column(colIdx).header()).index())
+                                    )
+                                        .off('keyup change')
+                                        .on('keyup change', function (e) {
+                                            e.stopPropagation();
+
+                                            // Get the search value
+                                            $(this).attr('title', $(this).val());
+                                            var regexr = '({search})'; //$(this).parents('th').find('select').val();
+
+                                            var cursorPosition = this.selectionStart;
+                                            // Search the column for that value
+                                            api
+                                                .column(colIdx)
+                                                .search(
+                                                    this.value != ''
+                                                        ? regexr.replace('{search}', '(((' + this.value + ')))')
+                                                        : '',
+                                                    this.value != '',
+                                                    this.value == ''
+                                                )
+                                                .draw();
+
+                                            $(this)
+                                                .focus()[0]
+                                                .setSelectionRange(cursorPosition, cursorPosition);
+                                        });
+                                });
+                        }
                     });
+
+                    
 
                     $.each(history, (i, e) => {
                         var tr = '<tr>';
                         tr += '<td>'+e.STT+'</td>';
-                        tr += '<td>'+e.THOI_GIAN+'</td>';
-                        tr += '<td>'+e.KY_THUAT+'</td>';
-                        tr += '<td>'+e.MA_DO_NGHE+'</td>';
-                        tr += '<td>'+e.MA_GIAM_SAT+'</td>';
-                        tr += '<td>'+e.TRANG_THAI+'</td>';
+                        tr += '<td>'+(e.THOI_GIAN || '')+'</td>';
+                        tr += '<td>'+(e.KY_THUAT || '')+'</td>';
+                        tr += '<td>'+(e.MA_DO_NGHE || '')+'</td>';
+                        tr += '<td>'+(e.MA_GIAM_SAT || '')+'</td>';
+                        tr += '<td>'+(e.TRANG_THAI || '')+'</td>';
                         tr += '</tr>';
                         $tbHis.append(tr);
                     });
+                    $tbHis.closest('table').find('thead tr')
+                        .clone(true)
+                        .addClass('filters')
+                        .appendTo('#dtHis thead');
+
                     $tbHis.closest('table').dataTable({
                         'bLengthChange': false,
                         'searching': true,
-                        'paging': false
+                        'paging': false,
+                        'initComplete': function () {
+                            var api = this.api();
+
+                            // For each column
+                            api
+                                .columns()
+                                .eq(0)
+                                .each(function (colIdx) {
+                                    // Set the header cell to contain the input element
+                                    var cell = $('#dtHis .filters th').eq(
+                                        $(api.column(colIdx).header()).index()
+                                    );
+                                    var title = $(cell).text();
+                                    $(cell).html('<input type="text" width="100%" placeholder="' + title + '" />');
+
+                                    // On every keypress in this input
+                                    $(
+                                        'input',
+                                        $('#dtHis .filters th').eq($(api.column(colIdx).header()).index())
+                                    )
+                                        .off('keyup change')
+                                        .on('keyup change', function (e) {
+                                            e.stopPropagation();
+
+                                            // Get the search value
+                                            $(this).attr('title', $(this).val());
+                                            var regexr = '({search})'; //$(this).parents('th').find('select').val();
+
+                                            var cursorPosition = this.selectionStart;
+                                            // Search the column for that value
+                                            api
+                                                .column(colIdx)
+                                                .search(
+                                                    this.value != ''
+                                                        ? regexr.replace('{search}', '(((' + this.value + ')))')
+                                                        : '',
+                                                    this.value != '',
+                                                    this.value == ''
+                                                )
+                                                .draw();
+
+                                            $(this)
+                                                .focus()[0]
+                                                .setSelectionRange(cursorPosition, cursorPosition);
+                                        });
+                                });
+                        }
                     });
                 },
                 error: function (res) {
